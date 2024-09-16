@@ -1,0 +1,26 @@
+fun testHtmlToPdf(): ByteArray? {
+        val htmlContent = readHtmlFileFromResources("transaction-confirmation.html")
+
+        // Create the POST request with raw HTML content
+        val request = Request.Builder()
+            .url("https://bfcmlgknkjkaduikjmsf74oelu0aojhz.lambda-url.us-west-2.on.aws/")
+            .post(htmlContent!!.toRequestBody("text/html".toMediaTypeOrNull())) // Send raw HTML
+            .addHeader("X-Attempt-Number", 1.toString())
+            .build()
+
+        // Execute the request and handle the response
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+            // Ensure the response is base64 encoded and the content type is PDF
+            val contentType = response.header("Content-Type")
+            val base64Pdf = response.body?.bytes()
+
+            // Check if the response content is a PDF and body is not null
+            if (contentType == "application/pdf" && base64Pdf != null) {
+                return base64Pdf
+            } else {
+                throw IllegalStateException("Unexpected response content")
+            }
+        }
+    }
